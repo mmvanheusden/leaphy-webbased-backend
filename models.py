@@ -9,4 +9,4 @@ class Sketch(BaseModel):
     source_code: str
     # TODO: make this an enum with supported board types
     board: str
-    libraries: list[Library]
+    libraries: list[Library] = []
