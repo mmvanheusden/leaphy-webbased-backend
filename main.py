@@ -1,38 +1,53 @@
-from typing import Union
 import asyncio
 import tempfile
+from os import path
+
 import aiofiles
+from fastapi import FastAPI, HTTPException
 
-from time import sleep
-
-from fastapi import FastAPI
-
+from conf import Settings
+from models import Sketch, Library
 
 app = FastAPI()
+settings = Settings()
 
 
-
-@app.post("/compile/c++")
-async def compile(fileContent: str, board: str, libraries: list[str] = []):
-    dir = tempfile.TemporaryDirectory()
-    print("Created temporary directory: ", dir.name)
-    async with aiofiles.open(f"/{dir.name}/{dir.name.removeprefix('/tmp/')}.ino", "w") as f:
-        await f.write(fileContent)
-
-    if libraries:
-        for lib in libraries:
-            print("Adding libraries: ", lib)
-
-            await asyncio.create_subprocess_exec("/home/koen/Documents/GitHub/leaphy-webbased-backend/arduino-cli", "lib", "install", lib)
-
-    a = await asyncio.create_subprocess_exec("/home/koen/Documents/GitHub/leaphy-webbased-backend/arduino-cli", "compile", "--fqbn", board, f"/{dir.name}/{dir.name.removeprefix('/tmp/')}.ino", "--output-dir", f"/{dir.name}/", stderr=asyncio.subprocess.PIPE, stdout=asyncio.subprocess.PIPE)
-    stdout, stderr = await a.communicate()
-    if a.returncode != 0:
-        return stderr.decode() + stdout.decode()
+async def _install_libraries(libraries: list[Library]):
+    # Install required libraries
+    for library in libraries:
+        print(f"Installing libraries: {library}")
+        installer = await asyncio.create_subprocess_exec(settings.arduino_cli_path, "lib", "install", library,
+                                                         stderr=asyncio.subprocess.PIPE,
+                                                         stdout=asyncio.subprocess.PIPE
+                                                         )
+        stdout, stderr = await installer.communicate()
+        if installer.returncode != 0:
+            raise HTTPException(500, f"Failed to install library: {stderr.decode() + stdout.decode()}")
 
 
-    try:
-        async with aiofiles.open(f"/{dir.name}/{dir.name.removeprefix('/tmp/')}.ino.hex", "rb") as f:
-            return await f.read()
-    except Exception as e:
-        return str(e)
+async def _compile_sketch(sketch: Sketch):
+    with tempfile.TemporaryDirectory() as dir_name:
+        file_name = f"{path.basename(dir_name)}.ino"
+        sketch_path = f"{dir_name}/{file_name}"
+
+        # Write the sketch to a temp .ino file
+        async with aiofiles.open(sketch_path, "w+") as f:
+            await f.write(sketch.source_code)
+
+        compiler = await asyncio.create_subprocess_exec(settings.arduino_cli_path, "compile", "--fqbn", sketch.board,
+                                                        sketch_path,
+                                                        "--output-dir",
+                                                        dir_name, stderr=asyncio.subprocess.PIPE,
+                                                        stdout=asyncio.subprocess.PIPE)
+        stdout, stderr = await compiler.communicate()
+        if compiler.returncode != 0:
+            raise HTTPException(500, stderr.decode() + stdout.decode())
+
+        async with aiofiles.open(f"{sketch_path}.hex", "r") as f:
+            return {"hex": await f.read()}
+
+
+@app.post("/compile/cpp")
+async def compile_cpp(sketch: Sketch):
+    await _install_libraries(sketch.libraries)
+    return await _compile_sketch(sketch)
