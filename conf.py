@@ -5,3 +5,4 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(env_file='.env')
 
     arduino_cli_path: str = "arduino-cli"
+    cors_origins: list[str] = ["*"]

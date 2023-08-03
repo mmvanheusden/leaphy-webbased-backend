@@ -4,12 +4,21 @@ from os import path
 
 import aiofiles
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+
 
 from conf import Settings
 from models import Sketch, Library
 
 app = FastAPI()
 settings = Settings()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=settings.cors_origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 
 async def _install_libraries(libraries: list[Library]):
