@@ -6,7 +6,6 @@ import aiofiles
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 
-
 from conf import Settings
 from models import Sketch, Library
 
