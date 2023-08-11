@@ -6,3 +6,10 @@ class Settings(BaseSettings):
 
     arduino_cli_path: str = "arduino-cli"
     cors_origins: list[str] = ["*"]
+
+    max_sessions_per_user: int = 1
+    max_total_sessions: int = 10000
+    session_duration: int = 3600
+
+
+settings = Settings()

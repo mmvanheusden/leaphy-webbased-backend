@@ -1,5 +1,6 @@
-fastapi==0.100.1
-aiofiles==23.1.0
-uvicorn==0.23.1
+fastapi==0.101.0
+aiofiles==23.2.1
+uvicorn==0.23.2
 pydantic==2.1.1
 pydantic-settings==2.0.2
+cachetools==5.3.1
