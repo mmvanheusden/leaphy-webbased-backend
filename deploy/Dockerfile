@@ -19,6 +19,7 @@ RUN python3 -m venv /app/venv && . /app/venv/bin/activate && \
     pip install --no-cache -r /app/requirements.txt
 
 COPY --chown=arduino:arduino *.py /app/
+COPY --chown=arduino:arduino deps /app/deps
 COPY --chown=arduino:arduino deploy/start.sh /app/start.sh
 RUN chmod +x /app/start.sh
 

@@ -10,7 +10,9 @@ from conf import settings
 sessions = TTLCache(maxsize=settings.max_total_sessions, ttl=settings.session_duration)
 
 
-def get_session_id(response: Response, session_id: Annotated[str | None, Cookie()] = None):
+def get_session_id(
+    response: Response, session_id: Annotated[str | None, Cookie()] = None
+):
     if not session_id:
         # First time user, create a new session
         session_id = uuid.uuid4().hex
