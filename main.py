@@ -8,7 +8,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from conf import settings
 from models import Sketch, Library
-from session import Session, sessions
+from deps.session import Session, sessions
+from deps.cache import code_cache, get_code_cache_key
 
 app = FastAPI()
 app.add_middleware(
@@ -39,7 +40,7 @@ async def _install_libraries(libraries: list[Library]):
             )
 
 
-async def _compile_sketch(sketch: Sketch):
+async def _compile_sketch(sketch: Sketch) -> dict[str, str]:
     with tempfile.TemporaryDirectory() as dir_name:
         file_name = f"{path.basename(dir_name)}.ino"
         sketch_path = f"{dir_name}/{file_name}"
@@ -71,8 +72,18 @@ async def _compile_sketch(sketch: Sketch):
 async def compile_cpp(sketch: Sketch, session_id: Session):
     # Make sure there's no more than X compile requests per user
     sessions[session_id] += 1
+
     try:
+        # Check if this code was compiled before
+        cache_key = get_code_cache_key(sketch.source_code)
+        if compiled_code := code_cache.get(cache_key):
+            # It was -> return cached result
+            return compiled_code
+
+        # Nope -> compile and store in cache
         await _install_libraries(sketch.libraries)
-        return await _compile_sketch(sketch)
+        result = await _compile_sketch(sketch)
+        code_cache[cache_key] = result["hex"]
+        return result
     finally:
         sessions[session_id] -= 1
