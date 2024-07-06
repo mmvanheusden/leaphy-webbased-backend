@@ -1,4 +1,5 @@
 """ FastAPI models """
+
 from typing import Annotated
 
 from pydantic import BaseModel, Field
@@ -20,3 +21,16 @@ class PythonProgram(BaseModel):
 
     source_code: bytes  # Base64 encoded program
     filename: str = ""
+
+
+class Message(BaseModel):
+    """Model representing a message"""
+
+    role: str
+    content: str
+
+
+class Messages(BaseModel):
+    """Model representing a collection of messages"""
+
+    messages: list[Message]

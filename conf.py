@@ -1,4 +1,5 @@
 """ Configuration settings """
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -25,6 +26,10 @@ class Settings(BaseSettings):
 
     # Max number of concurrent compile tasks
     max_concurrent_tasks: int = 10
+
+    # Groq config
+    groq_api_key: str
+    max_llm_tokens: int = 10000
 
 
 settings = Settings()
